@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOODCOIN — Is humanity happy today ? </title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.32.0/plotly.min.js"></script>
+<style>
+  :root{
+    --bg-0:#0e0c14;
+    --bg-1:#161320;
+    --line:#2a2536;
+    --ink:#f1ecea;
+    --ink-dim:#9a93a8;
+    --sad:#5b7fd6;
+    --anxious:#8b6fd6;
+    --neutral:#6a6480;
+    --happy:#e8b25c;
+    --euphoric:#f2895a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:
+      radial-gradient(60% 50% at 50% -10%, #241d33 0%, var(--bg-0) 60%),
+      var(--bg-0);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    padding:28px 18px 60px;
+  }
+  .wrap{max-width:920px; margin:0 auto;}
+ 
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:18px;
+  }
+  .pulse-dot{width:6px; height:6px; border-radius:50%; background:var(--happy); box-shadow:0 0 8px var(--happy); animation:pulse 2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+ 
+  .hero{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:20px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:26px;
+    margin-bottom:26px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:clamp(34px, 6vw, 54px);
+    line-height:.98;
+    letter-spacing:-.01em;
+  }
+  .tagline{
+    color:var(--ink-dim);
+    font-size:14.5px;
+    max-width:34ch;
+    margin-top:10px;
+    line-height:1.5;
+  }
+ 
+  .ticker{
+    text-align:right;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .price{
+    font-size:clamp(28px, 5vw, 40px);
+    font-weight:600;
+    transition:color .4s ease;
+  }
+  .delta{font-size:13px; margin-top:2px;}
+  .up{color:var(--euphoric);}
+  .down{color:var(--sad);}
+ 
+  .mood-banner{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    background:var(--bg-1);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px 22px;
+    margin-bottom:22px;
+  }
+  .mood-emoji{font-size:34px; line-height:1;}
+  .mood-label{font-family:'Fraunces', serif; font-size:21px; font-weight:500;}
+  .mood-sub{color:var(--ink-dim); font-size:13px; margin-top:2px;}
+ 
+  .panel{
+    background:var(--bg-1);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 6px 6px;
+    margin-bottom:20px;
+    overflow:hidden;
+  }
+  .panel-title{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    padding:0 16px 10px;
+  }
+ 
+  /* ---- carte en semis de points (aucune dépendance réseau) ---- */
+  #mapWrap{
+    position:relative;
+    width:100%;
+    aspect-ratio: 2 / 1;
+    margin:0 auto;
+    border-radius:10px;
+    overflow:hidden;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 12.5%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 8.333%),
+      radial-gradient(90% 70% at 50% 40%, #1c1730 0%, #120f1c 75%);
+  }
+  .country-dot{
+    position:absolute;
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    transition: background .6s ease, box-shadow .6s ease;
+    cursor:default;
+  }
+  #chart{width:100%; height:220px;}
+ 
+  .legend{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    padding:12px 16px 14px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--ink-dim);
+  }
+  .legend span{display:flex; align-items:center; gap:6px;}
+  .swatch{width:10px; height:10px; border-radius:2px;}
+ 
+  footer{
+    color:var(--ink-dim);
+    font-size:12px;
+    text-align:center;
+    margin-top:30px;
+    line-height:1.6;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+ 
+  <div class="eyebrow"><span class="pulse-dot"></span> Prototype — flux de prix simulé</div>
+ 
+  <div class="hero">
+    <div>
+      <h1>Moodcoin</h1>
+      <div class="tagline">The first token tracking real-time global human sentiment on-chaine.</div>
+    </div>
+    <div class="ticker">
+      <div class="price" id="price">$0.00000</div>
+      <div class="delta" id="delta">+0.00%</div>
+    </div>
+  </div>
+ 
+  <div class="mood-banner">
+    <div class="mood-emoji" id="moodEmoji">😐</div>
+    <div>
+      <div class="mood-label" id="moodLabel">Global vibe: Neutral</div>
+      <div class="mood-sub" id="moodSub">En attente du premier mouvement de marché…</div>
+    </div>
+  </div>
+ 
+  <div class="panel">
+    <div class="panel-title">Carte de l'humeur mondiale</div>
+    <div id="mapWrap"></div>
+    <div class="legend">
+      <span><i class="swatch" style="background:#5b7fd6"></i> Abattu</span>
+      <span><i class="swatch" style="background:#8b6fd6"></i> Anxieux</span>
+      <span><i class="swatch" style="background:#6a6480"></i> Neutre</span>
+      <span><i class="swatch" style="background:#e8b25c"></i> Optimiste</span>
+      <span><i class="swatch" style="background:#f2895a"></i> Euphorique</span>
+    </div>
+  </div>
+ 
+  <div class="panel">
+    <div class="panel-title">Cours MOODCOIN (temps simulé)</div>
+    <div id="chart"></div>
+  </div>
+ 
+  <footer>
+    Données 100% simulées à des fins de démonstration. Aucune transaction réelle.<br>
+    Étape suivante : brancher une vraie API de prix (Dexscreener / Birdeye) à la place du générateur aléatoire.
+  </footer>
+</div>
+ 
+<script>
+// ---------- Pays : nom, code, lat, lon (positions réelles, pas de fichier externe requis) ----------
+const COUNTRIES = [
+  ["États-Unis","USA",39.8,-98.6],["Canada","CAN",56.1,-106.3],["Mexique","MEX",23.6,-102.5],
+  ["Brésil","BRA",-14.2,-51.9],["Argentine","ARG",-38.4,-63.6],["Chili","CHL",-35.7,-71.5],
+  ["Colombie","COL",4.6,-74.1],["Pérou","PER",-9.2,-75.0],
+  ["Royaume-Uni","GBR",55.4,-3.4],["France","FRA",46.6,2.2],["Allemagne","DEU",51.2,10.4],
+  ["Espagne","ESP",40.5,-3.7],["Italie","ITA",41.9,12.6],["Pays-Bas","NLD",52.1,5.3],
+  ["Belgique","BEL",50.5,4.5],["Suisse","CHE",46.8,8.2],["Portugal","PRT",39.4,-8.2],
+  ["Suède","SWE",60.1,18.6],["Norvège","NOR",60.5,8.5],["Danemark","DNK",56.3,9.5],
+  ["Finlande","FIN",61.9,25.7],["Pologne","POL",51.9,19.1],["République tchèque","CZE",49.8,15.5],
+  ["Autriche","AUT",47.5,14.6],["Grèce","GRC",39.1,21.8],["Roumanie","ROU",45.9,24.9],
+  ["Ukraine","UKR",48.4,31.2],["Irlande","IRL",53.1,-8.2],["Islande","ISL",64.9,-19.0],
+  ["Russie","RUS",61.5,60.0],["Kazakhstan","KAZ",48.0,66.9],
+  ["Chine","CHN",35.9,104.2],["Inde","IND",20.6,79.0],["Japon","JPN",36.2,138.3],
+  ["Corée du Sud","KOR",35.9,127.8],["Indonésie","IDN",-0.8,113.9],["Thaïlande","THA",15.9,101.0],
+  ["Vietnam","VNM",14.1,108.3],["Philippines","PHL",12.9,121.8],["Pakistan","PAK",30.4,69.3],
+  ["Bangladesh","BGD",23.7,90.4],["Singapour","SGP",1.35,103.8],["Malaisie","MYS",4.2,108.0],
+  ["Turquie","TUR",39.0,35.2],["Arabie saoudite","SAU",23.9,45.1],["Israël","ISR",31.0,34.8],
+  ["Égypte","EGY",26.8,30.8],["Nigéria","NGA",9.1,8.7],["Afrique du Sud","ZAF",-30.6,22.9],
+  ["Kenya","KEN",-0.02,37.9],["Maroc","MAR",31.8,-7.1],["Algérie","DZA",28.0,1.7],
+  ["Australie","AUS",-25.3,133.8],["Nouvelle-Zélande","NZL",-40.9,174.9]
+];
+ 
+let price = 0.0042;
+let history = [];
+let lastMood = 0; // -1 (triste) .. +1 (euphorique)
+let jitter = COUNTRIES.map(() => (Math.random() - 0.5) * 0.7);
+ 
+function moodColor(v){
+  // v dans [-1,1] -> dégradé sad -> anxious -> neutral -> happy -> euphoric
+  const stops = [
+    [-1,   [91,127,214]],   // sad
+    [-0.4, [139,111,214]],  // anxious
+    [0,    [106,100,128]],  // neutral
+    [0.4,  [232,178,92]],   // happy
+    [1,    [242,137,90]]    // euphoric
+  ];
+  v = Math.max(-1, Math.min(1, v));
+  for (let i=0;i<stops.length-1;i++){
+    const [v0,c0] = stops[i], [v1,c1] = stops[i+1];
+    if (v >= v0 && v <= v1){
+      const t = (v - v0) / (v1 - v0);
+      const r = Math.round(c0[0] + (c1[0]-c0[0])*t);
+      const g = Math.round(c0[1] + (c1[1]-c0[1])*t);
+      const b = Math.round(c0[2] + (c1[2]-c0[2])*t);
+      return `rgb(${r},${g},${b})`;
+    }
+  }
+  return 'rgb(106,100,128)';
+}
+ 
+function moodWord(v){
+  if (v < -0.5) return ["😞","Abattu", "Le marché s'effondre. Les emojis pleurent."];
+  if (v < -0.15) return ["😟","Anxieux", "La nervosité domine le carnet d'ordres."];
+  if (v < 0.15)  return ["😐","Neutre",  "Le marché hésite, aucune tendance claire."];
+  if (v < 0.5)   return ["🙂","Optimiste", "Le sentiment se réchauffe doucement."];
+  return ["🤩","Euphorique", "Rallye général. Tout le monde sourit."];
+}
+ 
+// création des points une seule fois
+const mapWrap = document.getElementById('mapWrap');
+const dots = COUNTRIES.map(([name, code, lat, lon], i) => {
+  const x = (lon + 180) / 360 * 100;
+  const y = (90 - lat) / 180 * 100;
+  const el = document.createElement('div');
+  el.className = 'country-dot';
+  el.style.left = x + '%';
+  el.style.top = y + '%';
+  el.title = name;
+  el.style.animation = `pulse ${2 + (i % 5) * 0.3}s ease-in-out ${(i % 7) * 0.15}s infinite`;
+  mapWrap.appendChild(el);
+  return el;
+});
+ 
+function step(){
+  const cycle = Math.sin(history.length / 14) * 0.4;
+  const noise = (Math.random() - 0.5) * 1.2;
+  const changePct = (cycle + noise) / 100;
+  const prevPrice = price;
+  price = Math.max(0.0001, price * (1 + changePct));
+  history.push(price);
+  if (history.length > 60) history.shift();
+ 
+  const pct = ((price - prevPrice) / prevPrice) * 100;
+  lastMood = Math.max(-1, Math.min(1, lastMood * 0.85 + (pct / 3)));
+ 
+  renderTicker(pct);
+  renderMoodBanner();
+  renderMap();
+  renderChart();
+}
+ 
+function renderTicker(pct){
+  document.getElementById('price').textContent = '$' + price.toFixed(5);
+  const d = document.getElementById('delta');
+  d.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '% (dernier tick)';
+  d.className = 'delta ' + (pct >= 0 ? 'up' : 'down');
+}
+ 
+function renderMoodBanner(){
+  const [emoji, label, sub] = moodWord(lastMood);
+  document.getElementById('moodEmoji').textContent = emoji;
+  document.getElementById('moodLabel').textContent = 'Humeur mondiale : ' + label;
+  document.getElementById('moodSub').textContent = sub;
+}
+ 
+function renderMap(){
+  dots.forEach((el, i) => {
+    const v = Math.max(-1, Math.min(1, lastMood + jitter[i] * 0.35));
+    const c = moodColor(v);
+    el.style.background = c;
+    el.style.boxShadow = `0 0 9px ${c}`;
+  });
+}
+ 
+function renderChart(){
+  const data = [{
+    y: history,
+    type: 'scatter',
+    mode: 'lines',
+    line: { color: '#e8b25c', width: 2, shape: 'spline' },
+    fill: 'tozeroy',
+    fillcolor: 'rgba(232,178,92,0.08)'
+  }];
+  const layout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    margin: { t: 10, b: 24, l: 46, r: 12 },
+    xaxis: { showgrid: false, color: '#9a93a8', showticklab
+ 
